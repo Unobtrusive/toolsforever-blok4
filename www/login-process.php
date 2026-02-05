@@ -1,50 +1,54 @@
-<?php
+    <?php
 
-if (isset($_POST['submit'])) {
-    if (isset($_POST['email']) && isset($_POST['password'])) {
-        if (!empty($_POST['email']) && !empty($_POST['password'])) {
-            $emailForm = $_POST['email'];
-            $passwordForm = $_POST['password'];
+    if (isset($_POST['submit'])) {
+        if (isset($_POST['email']) && isset($_POST['password'])) {
+            if (!empty($_POST['email']) && !empty($_POST['password'])) {
+                $emailForm = $_POST['email'];
+                $passwordForm = $_POST['password'];
 
-            $conn = mysqli_connect('mariadb', 'root', 'password', 'tools4ever');
+                require 'database.php';
 
-            $sql = "SELECT * FROM users WHERE email='$emailForm'";
-            $result = mysqli_query($conn, $sql);
+                $sql = "SELECT * FROM users WHERE email=:emailForm";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([
+                    "emailForm" => $emailForm
+                ]);
+                $result = $stmt;
 
-            //als de email bestaat dan is het resultaat groter dan 0
-            if (mysqli_num_rows($result) > 0) {
+                //als de email bestaat dan is het resultaat groter dan 0
+                if ($result->rowCount() > 0) {
 
-                //resultaat gevonden? Dan maken we een user-array $dbuser
-                $dbuser = mysqli_fetch_assoc($result);
+                    //resultaat gevonden? Dan maken we een user-array $dbuser
+                    $dbuser = $result->fetch(PDO::FETCH_ASSOC);
 
-                if ($dbuser['password'] == $passwordForm) {
+                    if ($dbuser['password'] == $passwordForm) {
 
-                    session_start();
-                    $_SESSION['user_id']    = $dbuser['id'];
-                    $_SESSION['email']      = $dbuser['email'];
-                    $_SESSION['firstname']  = $dbuser['firstname'];
-                    $_SESSION['lastname']   = $dbuser['lastname'];
-                    $_SESSION['role']       = $dbuser['role'];
+                        session_start();
+                        $_SESSION['user_id']    = $dbuser['id'];
+                        $_SESSION['email']      = $dbuser['email'];
+                        $_SESSION['firstname']  = $dbuser['firstname'];
+                        $_SESSION['lastname']   = $dbuser['lastname'];
+                        $_SESSION['role']       = $dbuser['role'];
 
-                    // echo "You are logged in";
-                    header("Location: dashboard.php");
-                    exit;
+                        // echo "You are logged in";
+                        header("Location: dashboard.php");
+                        exit;
+                    } else {
+                        include 'header.php';
+                        $_GET['message'] = 'wrongpassword';
+                        include 'login-message.php';
+                        include 'footer.php';
+                        exit;
+                    }
                 } else {
                     include 'header.php';
-                    $_GET['message'] = 'wrongpassword';
+                    $_GET['message'] = 'usernotfound';
                     include 'login-message.php';
                     include 'footer.php';
                     exit;
                 }
-            } else {
-                include 'header.php';
-                $_GET['message'] = 'usernotfound';
-                include 'login-message.php';
-                include 'footer.php';
-                exit;
             }
         }
     }
-}
 
-include 'footer.php';
+    include 'footer.php';
